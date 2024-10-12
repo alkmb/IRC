@@ -1,0 +1,194 @@
+Roadmap para el Proyecto IRC en C++98
+
+Fase 1: Preparación y Configuración
+
+	1.	Configurar el Entorno de Desarrollo:
+	•	Instala un compilador compatible con C++98.
+	•	Configura tu editor de código o IDE preferido.
+	•	Asegúrate de tener herramientas como make, depuradores y control de versiones (Git).
+	2.	Revisar las Especificaciones del Proyecto:
+	•	Lee cuidadosamente los requisitos del proyecto proporcionados por la escuela 42.
+	•	Entiende las funcionalidades que se deben implementar y las restricciones técnicas.
+	3.	Estudiar Fundamentos Necesarios:
+	•	Sockets en C++98:
+	•	Revisa conceptos básicos de programación de sockets.
+	•	Familiarízate con funciones como socket(), bind(), listen(), accept(), connect(), send(), recv(), close().
+	•	Protocolo IRC:
+	•	Lee la RFC 2812 para entender el protocolo IRC.
+	•	Identifica los comandos y respuestas esenciales.
+	4.	Planificar la Estructura del Proyecto:
+	•	Divide el proyecto en módulos (red, parser, gestión de usuarios/canales).
+	•	Crea un repositorio y establece ramas para diferentes funcionalidades.
+	•	Asigna tareas si trabajas en equipo.
+
+Fase 2: Implementación de la Capa de Red
+
+	5.	Crear el Socket del Servidor:
+	•	Escribe código para crear un socket usando socket().
+	•	Configura opciones del socket si es necesario.
+	6.	Enlazar el Socket a una Dirección y Puerto:
+	•	Utiliza bind() para asociar el socket a una dirección IP y puerto específicos.
+	7.	Poner el Servidor a Escuchar Conexiones Entrantes:
+	•	Implementa listen() para permitir que el socket acepte conexiones.
+	•	Define un tamaño de cola adecuado para las conexiones pendientes.
+	8.	Aceptar Conexiones de Clientes:
+	•	Usa accept() en un bucle para manejar conexiones entrantes.
+	•	Crea una estructura para almacenar información de clientes conectados.
+	9.	Implementar Entrada/Salida No Bloqueante:
+	•	Configura sockets en modo no bloqueante usando fcntl() o ioctl().
+	•	Maneja casos en los que las operaciones de lectura/escritura no puedan completarse inmediatamente.
+	10.	Implementar Multiplexación con select():
+	•	Estudia cómo funciona select() para monitorear múltiples sockets.
+	•	Actualiza el bucle principal del servidor para usar select() y manejar múltiples clientes simultáneamente.
+	11.	Gestionar Desconexiones de Clientes:
+	•	Detecta cuando un cliente cierra la conexión.
+	•	Limpia los recursos asociados y actualiza las estructuras de datos.
+
+Fase 3: Implementación del Parser de Mensajes IRC
+
+	12.	Diseñar la Estructura del Parser:
+	•	Define cómo se almacenarán los mensajes recibidos.
+	•	Prepara una función para dividir los mensajes en prefijo, comando y parámetros.
+	13.	Implementar el Parser de Mensajes:
+	•	Escribe la lógica para analizar cada parte del mensaje IRC.
+	•	Maneja diferentes formatos y casos especiales según la especificación.
+	14.	Gestionar Mensajes Incompletos:
+	•	Implementa un buffer para almacenar datos recibidos que no forman un mensaje completo aún.
+	•	Ensambla mensajes completos antes de procesarlos.
+	15.	Manejar Errores de Sintaxis:
+	•	Detecta y responde adecuadamente a mensajes mal formados.
+	•	Envía mensajes de error siguiendo los códigos numéricos del protocolo IRC.
+
+Fase 4: Procesamiento de Comandos Básicos
+
+	16.	Implementar el Comando NICK:
+	•	Permite a los clientes establecer o cambiar su apodo.
+	•	Verifica la unicidad del apodo y gestiona conflictos.
+	17.	Implementar el Comando USER:
+	•	Procesa la información de usuario proporcionada.
+	•	Actualiza el estado del cliente para indicar que se ha registrado.
+	18.	Implementar el Comando PING y PONG:
+	•	Maneja PING enviado por clientes y servidores.
+	•	Responde con PONG para mantener la conexión activa.
+	19.	Implementar Autenticación de Usuario:
+	•	Verifica que el usuario haya enviado NICK y USER antes de permitir otras operaciones.
+	•	Envía mensajes de bienvenida una vez autenticado.
+
+Fase 5: Gestión de Usuarios y Canales
+
+	20.	Diseñar Estructuras de Datos para Usuarios:
+	•	Crea una clase o estructura para representar usuarios conectados.
+	•	Almacena información como nick, estado, modos, dirección IP.
+	21.	Diseñar Estructuras de Datos para Canales:
+	•	Crea una clase o estructura para representar canales.
+	•	Mantén listas de usuarios en cada canal y sus modos.
+	22.	Implementar el Comando JOIN:
+	•	Permite a los usuarios unirse a canales existentes o crear nuevos.
+	•	Actualiza las estructuras de datos de canales y usuarios.
+	23.	Implementar el Comando PART:
+	•	Permite a los usuarios salir de canales.
+	•	Maneja la eliminación de canales si ya no tienen usuarios.
+	24.	Implementar el Comando PRIVMSG:
+	•	Permite enviar mensajes privados a usuarios o canales.
+	•	Verifica que el destino existe y que el usuario tiene permiso para enviar mensajes.
+	25.	Implementar el Comando NOTICE:
+	•	Similar a PRIVMSG, pero sin respuestas automáticas de error.
+
+Fase 6: Modos de Usuario y Canal
+
+	26.	Implementar el Comando MODE para Usuarios:
+	•	Maneja modos como +i (invisible) y +o (operador).
+	•	Actualiza el estado del usuario y comunica los cambios.
+	27.	Implementar el Comando MODE para Canales:
+	•	Maneja modos como +m (moderado), +t (solo ops pueden cambiar el tópico).
+	•	Actualiza las propiedades del canal y notifica a los usuarios.
+	28.	Implementar el Comando TOPIC:
+	•	Permite cambiar o ver el tópico del canal.
+	•	Respeta los modos de canal que restringen este comando.
+	29.	Implementar el Comando NAMES:
+	•	Lista los usuarios presentes en un canal.
+	•	Maneja visibilidad según modos de usuario y canal.
+
+Fase 7: Funcionalidades Administrativas
+
+	30.	Implementar el Comando KICK:
+	•	Permite a operadores de canal expulsar a usuarios.
+	•	Actualiza las estructuras de datos y notifica al usuario expulsado.
+	31.	Implementar el Comando BAN:
+	•	Permite prohibir a usuarios unirse a un canal.
+	•	Gestiona listas de baneos y verifica al procesar JOIN.
+	32.	Implementar Sistemas de Permisos:
+	•	Define niveles de acceso y permisos para diferentes comandos.
+	•	Asegura que solo usuarios autorizados puedan ejecutar ciertos comandos.
+
+Fase 8: Mejoras y Optimización
+
+	33.	Implementar Logging y Monitoreo:
+	•	Registra actividades importantes y errores.
+	•	Proporciona herramientas para monitorear el estado del servidor.
+	34.	Optimizar el Manejo de Conexiones:
+	•	Revisa el uso de recursos y optimiza el código.
+	•	Considera implementar poll() o epoll() para mejorar el rendimiento.
+	35.	Mejorar la Seguridad:
+	•	Implementa validaciones adicionales para entradas de usuario.
+	•	Considera medidas contra ataques comunes como flood o spoofing.
+	36.	Gestionar Señales del Sistema:
+	•	Maneja señales como SIGINT para cerrar el servidor limpiamente.
+	•	Asegura que todos los recursos se liberan al cerrar.
+
+Fase 9: Pruebas e Integración
+
+	37.	Desarrollar Pruebas Unitarias para Cada Módulo:
+	•	Escribe casos de prueba para funciones críticas.
+	•	Utiliza datos simulados para verificar el comportamiento esperado.
+	38.	Realizar Pruebas de Integración:
+	•	Combina los módulos desarrollados y prueba su interacción.
+	•	Simula sesiones completas de usuario.
+	39.	Realizar Pruebas de Estrés:
+	•	Utiliza herramientas o scripts para simular múltiples conexiones.
+	•	Identifica y resuelve problemas de rendimiento o estabilidad.
+	40.	Depurar y Resolver Errores:
+	•	Revisa logs y utiliza depuradores para encontrar errores.
+	•	Corrige problemas y vuelve a probar hasta asegurar la fiabilidad.
+
+Fase 10: Finalización y Entrega
+
+	41.	Documentar el Código y el Proyecto:
+	•	Añade comentarios claros y consistentes en el código.
+	•	Prepara documentación externa, como un README y manual de usuario.
+	42.	Preparar la Presentación o Demostración:
+	•	Prepara ejemplos y escenarios para mostrar las funcionalidades.
+	•	Ensaya la presentación y anticipa posibles preguntas.
+	43.	Revisión Final y Limpieza:
+	•	Revisa todo el código para garantizar calidad y cumplimiento de estándares.
+	•	Elimina código muerto y asegura que no hay advertencias al compilar.
+	44.	Entrega del Proyecto:
+	•	Asegúrate de que todos los archivos necesarios están incluidos.
+	•	Sigue las instrucciones de entrega proporcionadas por la escuela.
+
+Fase 11: Mantenimiento y Soporte Posterior
+
+	45.	Recopilar Feedback:
+	•	Escucha comentarios de usuarios o evaluadores.
+	•	Toma nota de posibles mejoras o problemas encontrados.
+	46.	Planificar Actualizaciones Futuras:
+	•	Prioriza mejoras basadas en el feedback.
+	•	Considera agregar características adicionales o refactorizar partes del código.
+
+Consejos para el Desarrollo Procedural:
+
+	•	Trabaja en Pequeñas Iteraciones:
+	•	Completa y prueba una pequeña funcionalidad antes de pasar a la siguiente.
+	•	Asegúrate de que cada parte funcione correctamente de forma aislada.
+	•	Integra Frecuentemente:
+	•	Combina cambios regularmente para evitar conflictos mayores.
+	•	Prueba la integración para detectar problemas temprano.
+	•	Comunicación Constante (si trabajas en equipo):
+	•	Comparte avances y obstáculos con el equipo.
+	•	Sincroniza las interfaces y estructuras de datos compartidas.
+	•	Mantén un Estilo de Código Consistente:
+	•	Sigue convenciones de nomenclatura y formato.
+	•	Facilita la lectura y mantenimiento del código.
+	•	Gestiona Eficientemente el Control de Versiones:
+	•	Realiza commits atómicos con mensajes descriptivos.
+	•	Utiliza ramas para desarrollar nuevas funcionalidades sin afectar la rama principal.
