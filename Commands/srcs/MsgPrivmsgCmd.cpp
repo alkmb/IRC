@@ -14,7 +14,7 @@ bool MsgPrivmsgCmd::validate(IRCMessage const &message)
         Server::Singleton().sendMsg(client, "411 ERR_NORECIPIENT :No recipient given (PRIVMSG)\r\n");
         return false;
     }
-    if (message.getParams().size() < 1)
+    if (message.getTrailing().empty())
     {
         Server::Singleton().sendMsg(client, "412 ERR_NOTEXTTOSEND :No text to send\r\n");
         return false;
@@ -26,10 +26,11 @@ bool MsgPrivmsgCmd::validate(IRCMessage const &message)
 
 void MsgPrivmsgCmd::execute(Client *client, IRCMessage const &message)
 {
-
     std::string targetNick = message.getParams()[0];
-    std::string msgContent = message.getParams()[1];
-        std::cout << "validating message" << std::endl;
+    std::string msgContent = message.getTrailing();
+    std::cout << "client sender: " << client->getNickName() << std::endl;
+    std::cout << "Message received: " << msgContent << std::endl;
+    std::cout << "target nick: " << targetNick << std::endl;
 
     Client *targetClient = Server::Singleton().getClientByNickName(targetNick);
     if (targetClient)
@@ -37,10 +38,13 @@ void MsgPrivmsgCmd::execute(Client *client, IRCMessage const &message)
         std::string fullMsg = ":" + client->getNickName() + " PRIVMSG " + targetNick + " :" + msgContent + "\r\n";
         Server::Singleton().sendMsg(targetClient, fullMsg);
         Server::Singleton().sendMsgAll(fullMsg);
+
     }
     else
     {
-        Server::Singleton().sendMsg(client, "401 ERR_NOSUCHNICK " + msgContent + " :No such nick/channel\r\n");
-    }
+        std::string fullMsg = ":" + client->getNickName() + " PRIVMSG " + targetNick + " :" + msgContent + "\r\n";
 
+        Server::Singleton().sendMsg(client, fullMsg);
+        Server::Singleton().sendMsg(client, "401 ERR_NOSUCHNICK " + targetNick + " :No such nick/channel\r\n");
+    }
 }

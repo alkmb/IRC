@@ -9,9 +9,9 @@ class	Server
 {
 
 	private:
-		std::vector<struct pollfd>	_fds;
-		std::vector<Channel>		_channels;
-		std::vector<Client>			_clients;
+		std::deque<struct pollfd>	_fds;
+		std::deque<Channel>		_channels;
+		std::deque<Client>			_clients;
 		int							_serverSocket;
 		std::string					_passwd;
 		unsigned short				_port;

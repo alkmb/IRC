@@ -3,7 +3,6 @@
 #include "../../Core/includes/Server.hpp"
 #include "MessageCommand.hpp"
 
-
 class	MsgPrivmsgCmd : public MessageCommand
 {
 	public:

@@ -24,19 +24,27 @@ Server::~Server()
     delete this->_commands["JOIN"];
     delete this->_commands["WHO"];
     delete this->_commands["QUIT"];
-
-
+    delete this->_commands["NOTICE"];
 }
+
+#include <set>
+#include <stdexcept>
 
 int Server::initialize(const std::string &psswd, const unsigned short &port)
 {
+    // con el set no se duplican parametros Y se ordenan
+    std::set<unsigned short> occupiedPorts = {80, 443, 21, 22, 25, 110, 143, 993, 995};
+    if (occupiedPorts.find(port) != occupiedPorts.end()) {
+        throw std::runtime_error("Port " + std::to_string(port) + " is commonly occupied. Please choose a different port.");
+    }
     this->_commands["NICK"] = new AuthNickCmd();
     this->_commands["PASS"] = new AuthPassCmd();
     this->_commands["PRIVMSG"] = new MsgPrivmsgCmd();
+    this->_commands["NOTICE"] = new MsgNoticeCmd();
     this->_commands["JOIN"] = new ChnlJoinCmd();
     this->_commands["WHO"] = new ChnlWhoCmd();
     this->_commands["QUIT"] = new QuitCommand();
-    this->_commands["NOTICE"] = new MsgNoticeCmd();
+    
     std::cout << this->_fds.size();
     this->_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     int a;
@@ -101,12 +109,9 @@ void Server::serverLoop()
                 while (std::getline(ss, line, '\n'))
                 {
                     IRCMessage message(line);
+                    message.print();
                     // if (message.getIsValid())
                     Server::Singleton() *= message;
-                    if (message.getCommand() == "QUIT")
-                    {
-                        Server::Singleton()[i]->fd = -1;
-                    }
                     if (Server::Singleton()[i]->fd == -1)
                     {
                         Server::Singleton() -= Server::Singleton()[i];
@@ -138,7 +143,7 @@ Server& Server::operator-=(Client *client)
     client->getFd()->fd = -1;
     for (int i = 0; i < this->_channels.size(); i++)
         this->_channels[i] -= client;
-    std::vector<Client>::iterator it = std::find(this->_clients.begin(), this->_clients.end(), *client);
+    std::deque<Client>::iterator it = std::find(this->_clients.begin(), this->_clients.end(), *client);
     if (it != this->_clients.end())
     {
         std::cout << "el viejo size de clients es " << this->_clients.size() << std::endl;
@@ -151,7 +156,7 @@ Server& Server::operator-=(Client *client)
 
 Server& Server::operator-=(struct pollfd *fd)
 {
-    std::vector<struct pollfd>::iterator it;
+    std::deque<struct pollfd>::iterator it;
     for (it = this->_fds.begin(); it < this->_fds.end(); it++)
     {
         if ((*it).fd == -1)
@@ -179,12 +184,12 @@ struct pollfd *Server::operator[](int idx)
 
 std::string Server::getPasswd()
 {
-    return this->_passwd;    
+    return this->_passwd;
 }
 
 struct pollfd   *Server::getCurrentFd()
 {
-    return this->_currentFd;    
+    return this->_currentFd;
 }
 
 void			Server::setCurrentFd(struct pollfd *current)
@@ -226,6 +231,7 @@ Client*    Server::getClientByNickName(const std::string &name)
 {
     for (int i = 0; i < this->_clients.size(); i++)
     {
+        std::cout << "comparando " << this->_clients[i].getNickName() << " con " << name << std::endl;
         if (this->_clients[i].getNickName() == name)
             return &this->_clients[i];
     }
@@ -280,9 +286,25 @@ int Server::sendMsgAll(const std::string &msg)
 
 void Server::createChannel(const std::string &name)
 {
-    Channel newChannel;
-    newChannel.setName(name);
-    this->_channels.push_back(newChannel);
+	Channel newChannel;
+	if (newChannel.setName(name))
+	{
+		std::cout << "paso pro aqui" << std::endl;
+		struct pollfd *fd = Server::Singleton().getCurrentFd();
+		Client *client = Server::Singleton().getClientByFd(fd);
+		//newChannel.setChannelModes(client);
+		this->_channels.push_back(newChannel);
+		std::cout << "DEBUG 1" << std::endl;
+		this->_channels[this->_channels.size() - 1] += client;
+		std::cout << "DEBUG 2" << std::endl;
+		this->_channels[this->_channels.size() - 1].getModes()->chanCreator = client->getNickName();
+		std::cout << "DEBUG 3" << std::endl;
+		this->_channels[this->_channels.size() - 1].getModes()->topicChannel = true;
+		std::cout << "DEBUG 4" << std::endl;
+		this->_channels[this->_channels.size() - 1].getOperators()->push_back(client);
+		std::cout << "DEBUG 5" << std::endl;
+		std::cout << this->_channels[this->_channels.size() - 1].getChannelName() << " created" << std::endl;
+	}
 }
 
 void Server::createClient(const std::string &nick, const std::string &real, struct pollfd fd)
@@ -327,8 +349,8 @@ int Server::removeClientFromChannel(Client *client, Channel *channel)
 {
     if (client != 0)
     {
-        std::vector<Client*> *clients = channel->getClientsFromChannel();
-        std::vector<Client*>::iterator it = std::find((*clients).begin(), (*clients).end(), client);
+        std::deque<Client*> *clients = channel->getClientsFromChannel();
+        std::deque<Client*>::iterator it = std::find((*clients).begin(), (*clients).end(), client);
         for (int i = 0; i < (*clients).size(); i++)
         {
             if ((*clients)[i] == client)
@@ -341,8 +363,8 @@ int Server::removeClientFromChannel(Client *client, Channel *channel)
             (*clients).erase(std::remove((*clients).begin(), (*clients).end(), (Client*)0), (*clients).end());
         if (client->isOperator())
         {
-            std::vector<Client*> *admins = channel->getOperators();
-            std::vector<Client*>::iterator it2 = std::find((*admins).begin(), (*admins).end(), client);
+            std::deque<Client*> *admins = channel->getOperators();
+            std::deque<Client*>::iterator it2 = std::find((*admins).begin(), (*admins).end(), client);
             for (int i = 0; i < (*admins).size(); i++)
             {
                 if ((*admins)[i] == client)
