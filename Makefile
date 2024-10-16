@@ -1,6 +1,6 @@
 NAME= ircserv
 CC= g++
-CFLAGS= -std=c++98 -Wall -Wextra -Werror -fsanitize=address
+CFLAGS= -std=c++98 -Wall -Wextra -Werror 
 SRC = Core/srcs/Client.cpp Core/srcs/Channel.cpp Core/srcs/Server.cpp Core/srcs/main.cpp \
 Core/srcs/IRCMessage.cpp Commands/srcs/AuthNickCmd.cpp Commands/srcs/AuthPassCmd.cpp \
 Commands/srcs/MsgPrivmsgCmd.cpp Commands/srcs/MessageCommand.cpp Commands/srcs/ChnlJoinCmd.cpp \

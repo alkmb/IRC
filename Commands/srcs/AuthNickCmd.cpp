@@ -11,6 +11,7 @@ AuthNickCmd::~AuthNickCmd()
 
 void AuthNickCmd::execute(Client *client, IRCMessage const&message)
 {
+	std::cout << "execute nick" << std::endl;
 	if (client->getNickName().empty())
 		client->setNick(message.getParams()[0]);
 	Server::Singleton().sendMsg(client, ":" + client->getNickName() + " NICK " + message.getParams()[0] + "\r\n");
@@ -21,6 +22,7 @@ bool AuthNickCmd::validate(IRCMessage const&message)
 {
 	struct pollfd *cliFd = Server::Singleton().getCurrentFd();
 	Client *client = Server::Singleton().getClientByFd(cliFd);
+	std::cout << "validate nick" << std::endl;
 	if (!client->isVerified() && (!Server::Singleton().getPasswd().empty() || Server::Singleton().getPasswd() != ""))
 	{
 		Server::Singleton().sendMsg(client, "ERR_PASSWDMISMATCH :Wrong Password\r\n");

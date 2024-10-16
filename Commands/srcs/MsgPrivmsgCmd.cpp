@@ -40,6 +40,12 @@ void MsgPrivmsgCmd::execute(Client *client, IRCMessage const &message)
         Server::Singleton().sendMsgAll(fullMsg);
 
     }
+    else if (Server::Singleton().getChannelByName(targetNick))
+    {
+        Channel *channel = Server::Singleton().getChannelByName(targetNick);
+        std::string fullMsg = ":" + client->getNickName() + " PRIVMSG " + targetNick + " :" + msgContent + "\r\n";
+        channel->sendToAll(fullMsg);
+    }
     else
     {
         std::string fullMsg = ":" + client->getNickName() + " PRIVMSG " + targetNick + " :" + msgContent + "\r\n";

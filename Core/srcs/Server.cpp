@@ -64,7 +64,6 @@ int Server::initialize(const std::string &psswd, const unsigned short &port)
 
 void closeall(int signum)
 {
-    // Handle signal to close all connections
     std::cout << "Closing all connections..." << std::endl;
     close(Server::Singleton().getServerSocket());
     exit(signum);
@@ -87,7 +86,6 @@ void Server::serverLoop()
                 continue;
             if (Server::Singleton()[i]->fd == Server::Singleton().getServerSocket())
             {
-                // Function to accept connection and create client
                 tmp_fd = accept(Server::Singleton().getServerSocket(), 0, 0);
                 if (tmp_fd < 0)
                     continue;
@@ -109,7 +107,7 @@ void Server::serverLoop()
                 while (std::getline(ss, line, '\n'))
                 {
                     IRCMessage message(line);
-                    message.print();
+                    // message.print();
                     // if (message.getIsValid())
                     Server::Singleton() *= message;
                     if (Server::Singleton()[i]->fd == -1)
