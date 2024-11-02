@@ -4,21 +4,51 @@
 #include "IRCMessage.hpp"
 #include "../../Commands/includes/ICommand.hpp"
 #include <map>
+#include <list>
+
+template <typename T>
+T* get(std::list<T>& lst, size_t index) {
+    typename std::list<T>::iterator it = lst.begin();
+    std::advance(it, index); // Advance the iterator to the given index
+    return &(*it);           // Return a pointer to the element
+}
+
+template <typename T>
+std::vector<T> createVectorFromList(const std::list<T>& lst) {
+    std::vector<T> vec;
+    vec.reserve(lst.size()); // Reserve space to avoid reallocations
+    for (typename std::list<T>::const_iterator it = lst.begin(); it != lst.end(); ++it) {
+        vec.push_back(*it); // Copy each element from list to vector
+    }
+    return vec;
+}
+
+template <typename T>
+void deleteElementAtIndex(std::list<T>& lst, size_t index) {
+    if (index >= lst.size()) {
+        throw std::out_of_range("Index is out of range.");
+    }
+
+    typename std::list<T>::iterator it = lst.begin();
+    std::advance(it, index); // Move the iterator to the desired index
+    lst.erase(it); // Erase the element at the iterator position
+}
 
 class	Server
 {
 
 	private:
-		std::deque<struct pollfd>	_fds;
-		std::deque<Channel>		_channels;
-		std::deque<Client>			_clients;
+		std::list<struct pollfd>	_fds;
+		std::list<Channel>		_channels;
+		std::list<Client>			_clients;
 		int							_serverSocket;
 		std::string					_passwd;
-		unsigned short				_port;
-		bool						_endServer;
+		//unsigned short				_port;
+		//bool						_endServer;
 		sockaddr_in						_serverAddress;
 		struct pollfd   			*_currentFd;
 		std::map<std::string, ICommand*> _commands;
+		std::string					_delBuffer;
 	public:
 		static Server		&Singleton()
 		{
@@ -29,11 +59,11 @@ class	Server
 		Server&			operator-=(Client *client);
 		Server&			operator-=(struct pollfd *fd);
 		Server&			operator*=(IRCMessage const& msg);
-		struct pollfd  *operator[](int idx);
+		struct pollfd  *operator[](unsigned long idx);
 
 		void			serverLoop();
 		int				getServerSocket();
-		int				initialize(const std::string &psswd, const unsigned short &port);
+		int				initialize(const std::string &psswd, const unsigned int &port);
 
 		struct pollfd	*getClientFdByNickName(const std::string &name);
 		struct pollfd	*getClientFdByRealName(const std::string &name);
@@ -51,7 +81,6 @@ class	Server
 		void			createClient(const std::string &nick, const std::string &real, struct pollfd fd);
 
 		Channel			*getChannelByName(const std::string &name);
-		Channel			*getChannelByClient(Client *client);
 
 		int				addClientToChannel(Client *client, Channel *channel);
 		int				removeClientFromChannel(Client *client, Channel *channel);

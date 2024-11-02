@@ -16,7 +16,6 @@ class	IRCMessage
 		std::string					_trailing;
 		std::vector<std::string>	_params;
 		bool						_isValid;
-		std::string					_rawMessage;
 
 	public:
 		IRCMessage(const std::string &buffer);
@@ -29,6 +28,7 @@ class	IRCMessage
 
 		bool							isValid() const;
 		void							print() const;
+		void							clean();
 
 	private:
 		void							parseMessage(const std::string &buffer);

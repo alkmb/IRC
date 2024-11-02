@@ -11,7 +11,8 @@ AuthPassCmd::~AuthPassCmd()
 
 void AuthPassCmd::execute(Client *client, IRCMessage const&message)
 {
-	client->setVerified();
+	message.print();
+	client->setPwd();
 }
 
 bool AuthPassCmd::validate(IRCMessage const&message)
@@ -23,18 +24,18 @@ bool AuthPassCmd::validate(IRCMessage const&message)
 	str.erase(std::remove(str.begin (), str.end (), '\n'), str.end());
 	if (str.empty() && (!Server::Singleton().getPasswd().empty() || Server::Singleton().getPasswd() != ""))
 	{
-		Server::Singleton().sendMsg(client, "ERR_NEEDMOREPARAMS PASS :Not enough parameters\r\n");
+		Server::Singleton().sendMsg(client, ":Server 461 PASS :Not enough parameters\r\n");
 		Server::Singleton() -= client;
 		return false;
 	}
 	if (client->isVerified())
 	{
-		Server::Singleton().sendMsg(client, "ERR_ALREADYREGISTERED :You may not reregister\r\n");
+		Server::Singleton().sendMsg(client, ":Server 462 :You may not reregister\r\n");
 		return false;
 	}
 	if (str != Server::Singleton().getPasswd())
 	{
-		Server::Singleton().sendMsg(client, "ERR_PASSWDMISMATCH :Wrong Password\r\n");
+		Server::Singleton().sendMsg(client, ":Server 464 :Password incorrect\r\n");
 		Server::Singleton() -= client;
 		return false;
 	}

@@ -21,7 +21,19 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    Server::Singleton().initialize(argv[2], static_cast<unsigned short>(atoi(argv[1])));
+    unsigned int port = static_cast<unsigned int>(atoi(argv[1]));
+    if (port > 65535)
+    {
+        std::cerr << "Error: Port is out of range for TCP/IP protocol." << std::endl;
+        return 1;
+    }
+
+    if (Server::Singleton().initialize(argv[2], port) != 0)
+    {
+        std::cerr << "Server initialization failed" << std::endl;
+        return 1;
+    }
+
     Server::Singleton().serverLoop();
 
     return 0;

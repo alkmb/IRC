@@ -18,11 +18,12 @@ void	ChnlInviteCmd::execute(Client *client, IRCMessage const &message)
 	{
 		if (Server::Singleton().getChannelByName(channelName)->isOperator(client) == false)
 		{
-			msg = "ERR_CHANOPRIVSNEEDED :You're not channel operator\r\n";
+			msg =  ": " + client->getNickName() + " 482 " + channelName + " :You're not channel operator\r\n";
 			Server::Singleton().sendMsg(client, msg);
 			return;
 		}
 	}
+	Server::Singleton().getChannelByName(channelName)->addInvite(nickToInvite);
 	msg = ":" + client->getNickName() + " INVITE " + nickToInvite + " " + channelName + "\r\n";
 	Server::Singleton().getChannelByName(channelName)->sendToAll(msg);
 }
@@ -33,33 +34,33 @@ bool	ChnlInviteCmd::validate(const IRCMessage &msg)
 	std::string message;
 	if (msg.getParams().size() != 2)
 	{
-		message = "ERR_NEEDMOREPARAMS INVITE :Not enough parameters\r\n";
+		message = ": " + client->getNickName() + " 461 INVITE :Not enough parameters\r\n";
 		Server::Singleton().sendMsg(client, message);
 		return false;
 	}
 	std::string nickToInvite = msg.getParams()[0];
 	if (Server::Singleton().getClientByNickName(nickToInvite) == 0)
 	{
-		message = "ERR_NOSUCHNICK :No such nick/channel\r\n";
+		message = ": " + client->getNickName() + " 401 :No such nick/channel\r\n";
 		Server::Singleton().sendMsg(client, message);
 		return false;
 	}
 	std::string channelName = msg.getParams()[1];
 	if (Server::Singleton().getChannelByName(channelName) == 0)
 	{
-		message = "ERR_NOSUCHCHANNEL :No such channel\r\n";
+		message = ": " + client->getNickName() + " 403 :No such channel\r\n";
 		Server::Singleton().sendMsg(client, message);
 		return false;
 	}
 	if (Server::Singleton().getChannelByName(channelName)->getClientByNickName(client->getNickName()) == 0)
 	{
-		message = "ERR_NOTONCHANNEL :You're not on that channel\r\n";
+		message = ": " + client->getNickName() +" 442 :You're not on that channel\r\n";
 		Server::Singleton().sendMsg(client, message);
 		return false;
 	}
 	if (Server::Singleton().getChannelByName(channelName)->getClientByNickName(nickToInvite) != 0)
 	{
-		message = "ERR_USERONCHANNEL :User is already on channel\r\n";
+		message = ": " + client->getNickName() + " 443 :User is already on channel\r\n";
 		Server::Singleton().sendMsg(client, message);
 		return false;
 	}

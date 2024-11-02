@@ -1,4 +1,6 @@
 #include "../includes/ChnlModeCmd.hpp"
+#include <cstdlib>
+#include <algorithm>
 
 ChnlModeCmd::ChnlModeCmd()
 {
@@ -10,186 +12,214 @@ ChnlModeCmd::~ChnlModeCmd()
 
 void	ChnlModeCmd::execute(Client *client, IRCMessage const &message)
 {
-	std::vector<std::string> params = message.getParams();
-	std::string channelName = params[0];
-	Channel *channel = Server::Singleton().getChannelByName(channelName);
-	if (Server::Singleton().getChannelByName(channelName) == 0)
-	{
-		std::cout << "ERR_NOSUCHCHANNEL " + client->getNickName() + " :No such channel" << std::endl;
-		Server::Singleton().sendMsg(client, "ERR_NOSUCHCHANNEL " + client->getNickName() + " :No such channel\r\n");
-		return;
-	}
-	if (params.size() == 1)
-	{
-		std::string modes = "+";
-		if (channel->getModes()->inviteOnly) modes += "i";
-		if (channel->getModes()->topicChannel) modes += "t";
-		//if (channel->getModes()->secretChannel) modes += "s";
-		//if (channel->getModes()->operOnly) modes += "o";
-		//if (channel->getModes()->limit) modes += "l";
-		std::cout << "RPL_CHANNELMODEIS " + client->getNickName() + " " + channelName + " " + modes << std::endl;
-		Server::Singleton().sendMsg(client, "RPL_CHANNELMODEIS " + client->getNickName() + " " + channelName + " " + modes + "\r\n");	}
-	if (!channel->isOperator(client))
-	{
-		std::cout << "ERR_CHANOPRIVSNEEDED " + client->getNickName() + " :You're not channel operator" << std::endl;
-		Server::Singleton().sendMsg(client, "ERR_CHANOPRIVSNEEDED " + client->getNickName() + " :You're not channel operator\r\n");
-		return;
-	}
-	std::string modes = params[1];
+	//std::cout << "IN CHNLMODECMD EXECUTE" << std::endl;
+	std::string modes = message.getParams()[1];//.substr(0, message.getParams()[1].size())
+	Channel *channel = Server::Singleton().getChannelByName(message.getParams()[0]);
 	size_t paramIndex = 2;
-	parseModes(modes, params, paramIndex, client, channel);
-	std::string modeMessage = ":" + client->getNickName() + " MODE " + channelName + " " + modes;
-	std::cout << modeMessage << std::endl;
-	for (size_t i = 2; i < params.size(); ++i)
-		modeMessage += " " + params[i];
+
+	std::string modesToApply = "";
+	std::vector<std::string> paramsToApply;
+	if (!parseModes(modes, message.getParams(), paramIndex, client, modesToApply, paramsToApply))
+		return ;
+	applyModes(channel, modesToApply, paramsToApply, client);
+	std::string modeMessage = ":" + client->getNickName() + " MODE " + message.getParams()[0] + " " + modesToApply;
+	for (size_t i = 0; i < paramsToApply.size(); ++i)
+		modeMessage += " " + paramsToApply[i];
+	//std::cout << modeMessage << std::endl;
 	modeMessage += "\r\n";
-	channel->sendToAll(modeMessage.c_str());
+	channel->sendToAll(modeMessage);
 }
 
 bool	ChnlModeCmd::validate(IRCMessage const&msg)
 {
-	struct pollfd	*_clFd = Server::Singleton().getCurrentFd();
-	Client *client = Server::Singleton().getClientByFd(_clFd);
-
-	std::cout << "Params[0]: " << msg.getParams()[0] << std::endl;
-	std::cout << "Params[1]: " << msg.getParams()[1] << std::endl;
-	//if (msg.getParams().size() < 2)
-	//{
-	//	std::cout << "Params[0]: " << msg.getParams()[0] << std::endl;
-	//	std::cout << "Params[1]: " << msg.getParams()[1] << std::endl;
-	//	Server::Singleton().sendMsg(_client, "ERR_NEEDMOREPARAMS MODE :Not enough parameters\r\n");
-	//	return false;
-	//}
-	if (msg.getParams().empty())
+	//std::cout << "IN CHNLMODECMD VALIDATE" << std::endl;
+	Client *client = Server::Singleton().getClientByFd(Server::Singleton().getCurrentFd());
+	std::string message;
+	if (msg.getParams().empty() || msg.getParams().size() < 1)
 	{
-		if (client)
-			Server::Singleton().sendMsg(client, "461 " + client->getNickName() + " MODE :Not enough parameters\r\n");
+		message = ":Server 461 MODE :Not enough parameters\r\n";
+		Server::Singleton().sendMsg(client, message);
 		return false;
 	}
-	std::cout << "paso de aqui" << std::endl;
-	execute(client, msg);
-	//if (msg.getParams()[1][1] != '#') // Si es un modo de usuario
-	//{
-	//	std::string nick = msg.getParams()[1].substr(1);
-	//	if (msg.getParams().size() < 3)
-	//	{
-	//		Server::Singleton().sendMsg(_client, "ERR_NEEDMOREPARAMS MODE :Not enough parameters\r\n");
-	//		return false;
-	//	}
-	//	if (nick.empty())
-	//	{
-	//		Server::Singleton().sendMsg(_client, "ERR_NOSUCHNICK :No such nick\r\n");
-	//		return false;
-	//	}
-	//	if (Server::Singleton().getClientByNickName(nick))
-	//	{
-	//		std::string modes = msg.getParams()[2];
-	//		size_t paramIndex = 3;
-	//	}
-	//}
-	//if (msg.getParams()[1][1] == '#') // Si es un modo de canal
-	//{
-	//	std::string channelName = msg.getParams()[1];
-	//	if (msg.getParams().size() < 3)
-	//	{
-	//		Server::Singleton().sendMsg(_client, "ERR_NEEDMOREPARAMS MODE :Not enough parameters\r\n");
-	//		return false;
-	//	}
-	//	if (channelName.empty())
-	//	{
-	//		Server::Singleton().sendMsg(_client, "ERR_NOSUCHCHANNEL :No such channel\r\n");
-	//		return false;
-	//	}
-	//	if (Server::Singleton().getChannelByName(channelName))
-	//	{
-	//		std::string modes = msg.getParams()[2];
-	//		size_t paramIndex = 3;
-
-	//	}
-	//}
+	std::string channelName = msg.getParams()[0];
+	////std::cout << "ChannelName: " << channelName << std::endl;
+	if (Server::Singleton().getChannelByName(channelName) == 0)
+	{
+		message = ":Server 403 MODE :No such channel\r\n";
+		////std::cout << message << std::endl;
+		Server::Singleton().sendMsg(client, message);
+		return false;
+	}
+	if (Server::Singleton().getChannelByName(channelName)->getClientByNickName(client->getNickName()) == 0)
+	{
+		message = ":Server 442 " + channelName + " :You are not a member of the channel\r\n";
+		////std::cout << message << std::endl;
+		Server::Singleton().sendMsg(client, message);
+		return false;
+	}
+	if (Server::Singleton().getChannelByName(channelName)->isOperator(client) == false)
+	{
+		message = ":Server 482 " + channelName + " :You're not channel operator\r\n";
+		////std::cout << message << std::endl;
+		Server::Singleton().sendMsg(client, message);
+		return false;
+	}
+	if (msg.getParams().size() == 1)
+	{
+		message = ":Server 324 " + client->getNickName() + " " + channelName + " " + MODES + "\r\n";
+		Server::Singleton().sendMsg(client,message);
+		return true;
+	}
+	std::string modes = msg.getParams()[1];
+	////std::cout << "Modes: " << modes << std::endl;
+	execute(client,msg);
 	return true;
 }
 
-void	ChnlModeCmd::applyMode(char mode, bool adding, std::string &param, Client *client, Channel *channel)
+bool	ChnlModeCmd::parseModes(const std::string &modes, const std::vector<std::string> &params, size_t &paramIndex, Client *client, std::string &modesToApply, std::vector<std::string> &paramsToApply)
 {
-	switch (mode)
-	{
-		case 'i':
-			handleModeI(adding, channel);
-			break;
-		case 't':
-			handleModeT(adding, channel, param);
-			break;
-		//case 'k':
-		//	handleModeK(adding, param, channel);
-		//	break;
-		//case 'o':
-		//	handleModeO(adding, client, channel);
-		//	break;
-		//case 'l':
-		//	handleModeL(adding, param, channel);
-		//	break;
-		default:
-			Server::Singleton().sendMsg(client, ":" + client->getNickName() +  "ERR_UNKNOWNMODE MODE :Unknown mode\r\n");
-			break;
-
-	}
-}
-
-void	ChnlModeCmd::parseModes(const std::string &modes, const std::vector<std::string> &params, size_t &paramIndex, Client *client, Channel *channel)
-{
+	//std::cout << "IN PARSEMODES" << std::endl;
+	bool	success = true;
 	bool	adding = true;
-
+	std::string msg;
 	for (size_t i = 0; i < modes.size(); ++i)
 	{
+		//std::cout << "modes[i]: [" << modes[i] << "]" << std::endl;
 		if (modes[i] == '+')
 			adding = true;
 		else if (modes[i] == '-')
 			adding = false;
-		else
+		else if (modes[i] != '\0')
 		{
+			//std::cout << "i: " << i << std::endl;
+			//std::cout << "modes[i]: [" << modes[i] << "]" << std::endl;
+			if (!isValidMode(modes[i]) && !std::iscntrl(modes[i]))
+			{
+				msg = ":" + client->getNickName() + " 472 " + client->getNickName() + " MODE :is unknown mode char to me " + modes[i] + "\r\n";
+				Server::Singleton().sendMsg(client, msg);
+				success = false;
+				continue;
+			}
 			std::string param;
-			std::cout << "modes: " << modes << std::endl;
-			if (modes[i] == 'o' || modes[i] == 'k' || (modes[i] == 'l' && adding))
+			if (modeRequiresParam(modes[i], adding))
 			{
 				if (paramIndex >= params.size())
 				{
-					Server::Singleton().sendMsg(client, ":" + client->getNickName() + "461 " + client->getNickName() + " MODE :Not enough parameters\r\n");
+					msg = ":" + client->getNickName() + " 461 " + client->getNickName() + " MODE :Not enough parameters for mode " + modes[i] +  "\r\n";
+					Server::Singleton().sendMsg(client, msg);
+					success = false;
 					continue;
 				}
+				param = params[paramIndex++];
 			}
-			applyMode(modes[i], adding, param, client, channel);
+			modesToApply += (adding ? "+" : "-");
+			modesToApply += modes[i];
+			if (modeRequiresParam(modes[i], adding))
+				paramsToApply.push_back(param);
+			//std::cout << "Actual Value of modesToApply: " << modesToApply << std::endl;
+		}
+	}
+	return success;
+}
+
+void	ChnlModeCmd::applyModes(Channel *channel, const std::string &modesToApply, const std::vector<std::string> &paramsToApply, Client *client)
+{
+	//std::cout << "IN APPLYMODES" << std::endl;
+	bool adding = true;
+	size_t paramIndex = 0;
+	//std::cout << "Suposed modes to apply: " << modesToApply << std::endl;
+	for (size_t i = 0; i < modesToApply.size(); ++i)
+	{
+		if (modesToApply[i] == '+')
+			adding = true;
+		else if (modesToApply[i] == '-')
+			adding = false;
+		else
+		{
+			std::string param;
+			if (modeRequiresParam(modesToApply[i], adding))
+				param = paramsToApply[paramIndex++];
+			switch (modesToApply[i])
+			{
+				case 'i':
+					channel->setInviteOnly(adding);
+					break;
+				case 't':
+					channel->setTopicLock(adding);
+					break;
+				case 'k':
+					if (adding)
+						channel->setKey(param);
+					else
+						channel->removeKey();
+					break;
+				case 'l':
+					if (adding && std::atoi(param.c_str()) > 0)
+						channel->setLimit(std::atoi(param.c_str()));
+					else
+						channel->removeLimit();
+					break;
+				case 'o':
+					Client *toSet = Server::Singleton().getClientByNickName(param);
+					if (toSet != 0 && toSet != client)
+					{
+						if (adding)
+							channel->addOperator(toSet);
+						else
+							channel->removeOperator(toSet);
+					}
+					break;
+			}
 		}
 	}
 }
 
-void	ChnlModeCmd::handleModeI(bool adding, Channel *channel)
+bool	ChnlModeCmd::isValidMode(char mode)
 {
-	if (adding)
+	std::string validModes = "itkol";
+	for (size_t i = 0; i < validModes.size(); ++i)
 	{
-		channel->getModes()->inviteOnly = true;
-		Client *client = Server::Singleton().getClientByFd(Server::Singleton().getCurrentFd());
-		std::string message =":" + client->getNickName() + "MODE " + channel->getChannelName() + " +i\r\n";
-		Server::Singleton().sendMsg(client, message);
+		if (mode == validModes[i])
+			return true;
 	}
-	else
-		channel->getModes()->inviteOnly = false;
+	//std::cout << "INVALID MODE (int): " << static_cast<int>(mode) << std::endl;
+	return false;
 }
 
-void	ChnlModeCmd::handleModeT(bool adding, Channel *channel, std::string &trailing)
+bool	ChnlModeCmd::modeRequiresParam(char mode, bool adding)
 {
-	Client *client = Server::Singleton().getClientByFd(Server::Singleton().getCurrentFd());
-	if (adding)
-	{
-		channel->getModes()->topicChannel = true;
-		std::string message = "MODE " + channel->getChannelName() + " +t :" + trailing + "\r\n";
-		std::cout << "message: " << message << std::endl;
-		Server::Singleton().sendMsg(client,message);
-	}
-	else
-	{
-		channel->getModes()->topicChannel = false;
-		std::string message = "MODE " + channel->getChannelName() + " -t\r\n";
-		Server::Singleton().sendMsg(client,message);
-	}
+	if (mode == 'o' || mode == 'k' || (mode == 'l' && adding))
+		return true;
+	return false;
 }
+
+//void	ChnlModeCmd::handleModeI(bool adding, Channel *channel)
+//{
+//	if (adding)
+//	{
+//		channel->getModes()->inviteOnly = true;
+//		Client *client = Server::Singleton().getClientByFd(Server::Singleton().getCurrentFd());
+//		std::string message =":" + client->getNickName() + " MODE " + channel->getChannelName() + " +i\r\n";
+//		Server::Singleton().sendMsg(client, message);
+//	}
+//	else
+//		channel->getModes()->inviteOnly = false;
+//}
+
+//void	ChnlModeCmd::handleModeT(bool adding, Channel *channel, std::string &trailing)
+//{
+//	Client *client = Server::Singleton().getClientByFd(Server::Singleton().getCurrentFd());
+//	if (adding)
+//	{
+//		channel->getModes()->topicLock = true;
+//		std::string message = ":" + client->getNickName() + " MODE " + channel->getChannelName() + " +t :" + trailing + "\r\n";
+//		//std::cout << "NEW_TOPIC_SET: " << message << std::endl;
+//		Server::Singleton().sendMsg(client, message);
+//	}
+//	else
+//	{
+//		channel->getModes()->topicLock = false;
+//		std::string message = ":" + client->getNickName() + " MODE " + channel->getChannelName() + " -t\r\n";
+//		Server::Singleton().sendMsg(client, message);
+//	}
+//}

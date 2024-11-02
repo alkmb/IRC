@@ -3,6 +3,7 @@
 Client::Client()
 {
     this->_isVerified = false;
+    this->_correctPwd = false;
 }
 
 Client::~Client()
@@ -13,6 +14,16 @@ Client::~Client()
 bool			Client::operator==(const Client &n2)
 {
     return (this == &n2);
+}
+
+void			Client::setPwd()
+{
+    this->_correctPwd = true;
+}
+
+bool			Client::correctPwd()
+{
+    return this->_correctPwd;
 }
 
 std::string Client::getNickName()
@@ -63,4 +74,19 @@ void    Client::setReal(const std::string &name)
 void    Client::setAdmin(bool op)
 {
     this->_isOperator = op;
+}
+
+void	Client::addBuffer(const std::string &append)
+{
+	this->_buffer += append;
+}
+
+void	Client::clearBuffer()
+{
+	this->_buffer = "";
+}
+
+std::string		Client::getBuffer()
+{
+	return this->_buffer;
 }

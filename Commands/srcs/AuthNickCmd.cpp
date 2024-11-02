@@ -11,42 +11,44 @@ AuthNickCmd::~AuthNickCmd()
 
 void AuthNickCmd::execute(Client *client, IRCMessage const&message)
 {
-	std::cout << "execute nick" << std::endl;
+	std::string str = message.getParams()[0];
+	str.erase(std::remove(str.begin (), str.end (), '\r'), str.end());
+	str.erase(std::remove(str.begin (), str.end (), '\n'), str.end());
 	if (client->getNickName().empty())
-		client->setNick(message.getParams()[0]);
-	Server::Singleton().sendMsg(client, ":" + client->getNickName() + " NICK " + message.getParams()[0] + "\r\n");
-	client->setNick(message.getParams()[0]);
+		client->setNick(str);
+	Server::Singleton().sendMsg(client, ":" + client->getNickName() + " NICK " + str + "\r\n");
+	client->setNick(str);
+	if (!client->isVerified() && client->getRealName() != "")
+		client->setVerified();
 }
 
 bool AuthNickCmd::validate(IRCMessage const&message)
 {
 	struct pollfd *cliFd = Server::Singleton().getCurrentFd();
 	Client *client = Server::Singleton().getClientByFd(cliFd);
-	std::cout << "validate nick" << std::endl;
-	if (!client->isVerified() && (!Server::Singleton().getPasswd().empty() || Server::Singleton().getPasswd() != ""))
+	std::string str = message.getParams()[0];
+	str.erase(std::remove(str.begin (), str.end (), '\r'), str.end());
+	str.erase(std::remove(str.begin (), str.end (), '\n'), str.end());
+	if (!client->correctPwd() && (!Server::Singleton().getPasswd().empty() || Server::Singleton().getPasswd() != ""))
 	{
-		Server::Singleton().sendMsg(client, "ERR_PASSWDMISMATCH :Wrong Password\r\n");
+		Server::Singleton().sendMsg(client, ":Server 464 :Password incorrect\r\n");
 		Server::Singleton() -= client;
 		return false;
 	}
-	if (!client->isVerified())
+	if (str.empty())
 	{
-		client->setVerified();
-	}
-	if (message.getParams()[1].empty())
-	{
-		Server::Singleton().sendMsg(client, "ERR_NONICKNAMEGIVEN :No nickname given\r\n");
+		Server::Singleton().sendMsg(client, ":Server 431 :No nickname given\r\n");
 		return false;
 	}
 	if (false) //TO DO, implementar check de caracteres correctos
 	{
-		Server::Singleton().sendMsg(client, "ERR_ERRONEUSNICKNAME " + message.getParams()[0] + " :Erroneous nickname\r\n");
+		Server::Singleton().sendMsg(client, ":Server 432 " + str + " :Erroneous nickname\r\n");
 		return false;
 	}
-	if (Server::Singleton().getClientByNickName(message.getParams()[0]) != 0
-		&& Server::Singleton().getClientByNickName(message.getParams()[0]) != client)
+	if (Server::Singleton().getClientByNickName(str) != 0
+		&& Server::Singleton().getClientByNickName(str) != client)
 	{
-		Server::Singleton().sendMsg(client, "ERR_NICKNAMEINUSE " + message.getParams()[0] + " :Nickname is already in use\r\n");
+		Server::Singleton().sendMsg(client, ":Server 433 " + str + " :Nickname is already in use\r\n");
 		return false;
 	}
 

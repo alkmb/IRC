@@ -1,9 +1,13 @@
 
 #include "../includes/IRCMessage.hpp"
+#include<algorithm>
 
 IRCMessage::IRCMessage(const std::string &buffer)
 {
-	parseMessage(buffer);
+	std::string mutableBuffer = buffer;
+	mutableBuffer.erase(std::remove(mutableBuffer.begin(), mutableBuffer.end(), '\r'), mutableBuffer.end());
+	mutableBuffer.erase(std::remove(mutableBuffer.begin(), mutableBuffer.end(), '\n'), mutableBuffer.end());
+	parseMessage(mutableBuffer);
 }
 
 IRCMessage::~IRCMessage() {}
@@ -76,7 +80,6 @@ bool	IRCMessage::isValidCommand(const std::string &command)
 
 void	IRCMessage::parseMessage(const std::string &buffer)
 {
-	_rawMessage = buffer;
 	_isValid = true;
 
 	size_t	pos = 0;
@@ -139,7 +142,7 @@ void	IRCMessage::parseMessage(const std::string &buffer)
 			std::string param = buffer.substr(pos, param_end - pos);
 			if (!isValidMiddleParam(param))
 			{
-				std::cout << "Param: " << param << std::endl;
+				//std::cout << "Param: " << param << std::endl;
 				_isValid = false;
 				return;
 			}
@@ -195,7 +198,7 @@ bool	IRCMessage::isValidMiddleParam(const std::string &param)
 	{
 		if (param[i] == ' ' || param[i] == ':')
 		{
-			std::cout << static_cast<int>(param[i]) << std::endl;
+			//std::cout << static_cast<int>(param[i]) << std::endl;
 			return false;
 		}
 	}
@@ -235,10 +238,29 @@ void	IRCMessage::print() const
 	std::cout << "Command: " << _command << std::endl;
 	std::cout << "Params: ";
 	for (size_t i = 0; i < _params.size(); ++i)
-		std::cout << _params[i] << " ";
+		std::cout << "Params[" << i << "].size() = " << _params[i].size() << "   " << _params[i] << "\n";
 	std::cout << std::endl;
 	std::cout << "Trailing: " << _trailing << std::endl;
 }
+
+//void	IRCMessage::clean()
+//{
+
+//	_prefix.erase(std::remove(_prefix.begin (), _prefix.end (), '\r'), _prefix.end());
+//	_prefix.erase(std::remove(_prefix.begin (), _prefix.end (), '\n'), _prefix.end());
+
+//	_command.erase(std::remove(_command.begin (), _command.end (), '\r'), _command.end());
+//	_command.erase(std::remove(_command.begin (), _command.end (), '\r'), _command.end());
+
+//	for (size_t i = 0; i < _params.size(); ++i)
+//	{
+//		_params[i].erase(std::remove(_params[i].begin (), _params[i].end (), '\r'), _params[i].end());
+//		_params[i].erase(std::remove(_params[i].begin (), _params[i].end (), '\n'), _params[i].end());
+//	}
+
+//	_trailing.erase(std::remove(_trailing.begin (), _trailing.end (), '\r'), _trailing.end());
+//}
+
 
 //PART OF OLD CONSTRUCTOR
 	// std::stringstream	new_buffer(buffer);
